@@ -44,7 +44,8 @@ These two statements are equivalent:
 Strict mode is an installation of the dependency graph which guarantees that phantom dependencies break at runtime.
 
 ## Motivation
-//TODO
+
+Installing a repository in strict mode make it possible to see each workspace as a pure function of its code and its dependencies. With the guarantee that a workspace cannot depend on a side effect from another workspace, we can implement more stable and optimized build system.
 
 ## Detailed Explanation
 //TODO
