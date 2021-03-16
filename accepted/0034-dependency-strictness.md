@@ -24,21 +24,11 @@ We say that `foo` imports `bar` when the code in `foo` relies on its ability to 
 
 A direct dependency is an asymetrical relationship between two packages. These two statements are equivalent:
 
-> `bar` is listed in `foo`'s `package.json` as a dependency, a devDependency or a peerDependency.
+> `bar` is listed in `foo`'s `package.json` as a dependency, a devDependency (in case of local packages) or a peerDependency.
 
 > `foo` has a direct dependency on `bar`.
 
 The term "direct dependency" is sometimes used to refer to a package instead of a relationship (eg. `bar` is a direct dependency of `foo`). For the sake of clarity, this RFC will only use the term to refer to a relationship between two packages.
-
-### Transitive dependency
-
-A transitive dependency is an asymetrical relationship between two packages. These two statements are equivalent:
-
-> (`foo` has no direct dependency on `bar`) AND ((`foo` has a direct dependency on a package which has a direct dependency on `bar`) OR (`foo` has a direct dependency on a package which has a transitive dependency on `bar`)).
-
-> `foo` has a transitive dependency on `bar`.
-
-The term `transitive dependency` is sometimes used to refer to a package instead of a relationship (eg. `bar` is a transitive dependency of `foo`). For the sake of clarity, this RFC will only use the term to refer to a relationship between two packages.
 
 ### Phantom dependency
 
