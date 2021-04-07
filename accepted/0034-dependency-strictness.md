@@ -40,7 +40,11 @@ When a package is being resolved, the resolution algorithm follows symlinks as i
 
 ## Implementation
 
-TODO: Describe implementation.
+TODO: Describe implementation better.
+
+- Packages are installed in folder called the store
+- Each package is installed in a folder name containing a hash of the content of this package (and possibly of its dependencies)
+- node_modules folders are created and populated by symlinks to the location of the dependency in the store.
 
 ### Simple example 
 
