@@ -40,7 +40,7 @@ When a package is being resolved, the resolution algorithm follows symlinks as i
 
 ## Implementation
 
-<TODO> Describe implementation.
+TODO: Describe implementation.
 
 ### Simple example 
 
@@ -110,7 +110,7 @@ When a package is being resolved, the resolution algorithm follows symlinks as i
 
 ## Nice side effects
 
-<TODO> Polish this part.
+TODO: Polish this part.
 
 Implementing strictness this way provide the following advantages:
 
