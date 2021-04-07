@@ -4,30 +4,30 @@
 
 This RFC is a proposal to add a new opt-in installation mode called `strict-mode`.
 
-Strict mode is an essential ingredient to fullfil the assumption that dependency-graph is an accurate description of the relationships between packages.
+Strict mode is an essential ingredient to fulfill the assumption that dependency-graph is an accurate description of the relationships between workspaces.
 
 ## Motivation
 
 Monorepo-build-tools optimize the dev-workflows by assuming that the dependency graph is an accurate representation of the relationships between workspaces.
 
-This assumption is a good approximation but it is not always accurate. This innaccuracy can lead to a broken builds or releasing broken code.
+This assumption is a good approximation, but it is not always accurate. This inaccuracy can lead to a broken builds or releasing broken code.
 
-What breaks this assumption is the fact that a dependency of one workspace can affect another workspace even if there is no dependency declared between these two workspaces.
+What breaks this assumption is the fact that a dependency of one workspace can affect another workspace even if there is no dependency declared between these two workspaces. This is true because npm de-duplicates dependencies by installing them in the repo's root node_modules folder, making them accessible by every workspace.
 
 ## Rational
 
-There seems to be a consencus in the community that [import-maps](https://github.com/WICG/import-maps) is key to the future of dependency management. Because this standard is not yet implemented in NodeJS npm cannot use it yet as a strategy to implement strit-mode. Instead, the strategy suggested in this RFC is to implement a solution that works with the current ecosystem by making pieces that can be reused later on to implement support for import-maps.
+There seems to be a consensus in the community that [import-maps](https://github.com/WICG/import-maps) is key to the future of dependency management. Because this standard is not yet implemented in NodeJS npm cannot use it yet as a strategy to implement strict-mode. Instead, the strategy suggested in this RFC is to implement a solution that works with the current ecosystem by making pieces that can be reused later-on to implement support for import-maps.
 
 The goal is to have isolation between workspaces, so that one workspace's output cannot be impacted by the dependencies of an unrelated workspace. This means that we cannot install a dependency in the root of the repository as it would expose it to all the workspaces.
 This means that packages need to be accessed only through the node_modules folder of each workspace. A naive implementation of this would create duplication which would lead to performance and disk usage issues with a cost outweighing the benefit of strictness.
 
-This RFC suggests to install packages on a flat structure on disk and enable the imports from one to another by setting up symlinks between them.
+This RFC suggests to install packages on a flat structure on disk and enable the imports from one to another package by setting up symlinks between them.
 
 This approach offers these benefits:
 
 - *No package duplication*, a given version of a package is installed only once on disk, no matter how many workspaces depend on it.
-- *Strict dependencies*, only the dependencies declared in package.json are installed as symlinks. Phantom dependencies are exposed by failing build and tests.
-- *Work with standard runtimes*, while other alterntives rely on modifying the runtimes (eg. NodeJS), this solution is compatible with the assumptions of most build tools.
+- *Strict dependencies*, only the dependencies declared in package.json are installed as symlinks. Phantom dependencies are exposed by failing builds and tests.
+- *Work with standard runtimes*, while other alternatives rely on modifying the runtimes (eg. NodeJS), this solution is compatible with the assumptions of most build tools.
 - *Battle tested*, this installation strategy has been battle tested by large private repos in Microsoft which have successfully used it through [pnpm](https://pnpm.io/).
 
 ## Detailed Explanation
@@ -39,6 +39,8 @@ This strategy is based on the following characteristic of the [nodejs module res
 When a package is being resolved, the resolution algorithm follows symlinks as if there were real folders. Once a module is resolved, the resolution algorithm calls 'realpath()' on the result. This means that the resolution algorithm always returns a real path. This allows to setup an arbitrary complex dependency graph while making sure nodejs does not create more than one instance of a given module..
 
 ## Implementation
+
+<TODO> Describe implementation.
 
 ### Simple example 
 
@@ -107,6 +109,8 @@ When a package is being resolved, the resolution algorithm follows symlinks as i
 
 
 ## Nice side effects
+
+<TODO> Polish this part.
 
 Implementing strictness this way provide the following advantages:
 
