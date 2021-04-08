@@ -82,46 +82,46 @@ TODO: Describe implementation better.
 
 ```
   root
-   _
-   |
-   +---> package_store
-   |          _
-   |          |
-   |          +---> A@1.0.0-21f95f7
-   |          |        _
-   |          |        |
-   |          |        +---> node_modules
-   |          |                   _
-   |          |                   |
-   |          |                   +---> B (symlink to ../../B@1.0.0-0d9856)
-   |          |
-   |          +---> B@1.0.0-0d9856
-   |
-   +---> workspaces
-             _
-             |
-             +---> foo
-             |      _
-             |      |
-             |      +---> node_modules
-             |                 _
-             |                 |
-             |                 +---> A (symlink to ../../package_store/A@1.0.0-21f95f7)
-             |
-             +---> bar
-             |      _
-             |      |
-             |      +---> node_modules
-             |                 _
-             |                 |
-             |                 +---> A (symlink to ../../package_store/A@1.0.0-21f95f7)
-             +---> fish
-                    _
-                    |
-                    +---> node_modules
-                               _
-                               |
-                               +---> B (symlink to ../../package_store/B@1.0.0-0d9856)
+   ┬
+   │
+   ├───> package_store
+   │          ┬
+   │          │
+   │          ├───> A@1.0.0-21f95f7
+   │          │        ┬
+   │          │        │
+   │          │        └───> node_modules
+   │          │                   ┬
+   │          │                   │
+   │          │                   └───> B (symlink to ../../B@1.0.0-0d9856)
+   │          │
+   │          └───> B@1.0.0-0d9856
+   │
+   └───> workspaces
+             ┬
+             │
+             ├───> foo
+             │      ┬
+             │      │
+             │      └───> node_modules
+             │                 ┬
+             │                 │
+             │                 └───> A (symlink to ../../package_store/A@1.0.0-21f95f7)
+             │
+             ├───> bar
+             │      ┬
+             │      │
+             │      └───> node_modules
+             │                 ┬
+             │                 │
+             │                 └───> A (symlink to ../../package_store/A@1.0.0-21f95f7)
+             └───> fish
+                    ┬
+                    │
+                    └───> node_modules
+                               ┬
+                               │
+                               └───> B (symlink to ../../package_store/B@1.0.0-0d9856)
 
 
 ```
