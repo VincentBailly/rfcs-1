@@ -36,14 +36,14 @@ This approach offers these benefits:
 
 This strategy is based on the following characteristic of the [Node.js module resolution algorithm](https://nodejs.org/api/modules.html#modules_all_together):
 
-When a package is being resolved, the resolution algorithm follows symlinks as if there were real folders. Once a module is resolved, the resolution algorithm calls 'realpath()' on the result. This means that the resolution algorithm always returns a real path. This allows to setup an arbitrary complex dependency graph while making sure Node.js does not create more than one instance of a given module.
+When a module is being resolved, the resolution algorithm follows symlinks as if there were real folders. Once a module is resolved, the resolution algorithm calls 'realpath()' on the result. This means that the resolution algorithm always returns a real path. This allows to setup an arbitrary complex dependency graph while making sure Node.js does not create more than one instance of a given module.
 
 ## Implementation
 
 TODO: Describe implementation better.
 
 - Packages are installed in folder called the store
-- Each package is installed in a folder name containing a hash of the content of this package (and possibly of its dependencies)
+- Each package is installed in a folder name containing a hash of the content of this package (and possibly of its dependencies).
 - node_modules folders are created and populated by symlinks to the location of the dependency in the store.
 
 ### Simple example 
@@ -118,9 +118,8 @@ TODO: Polish this part.
 
 Implementing strictness this way provide the following advantages:
 
-- It reduces package duplication compared to the npm default installation mode, making the installation process faster.
+- It reduces package duplication compared to the npm default installation mode, making the installation process faster. On a prototype, this installation strategy brought down the install time from 5 to 1min on a large monorepo of 500+ workspaces.
 - Choosing wisely the hash used to store the packages in the store can lead to very fast incremental installation.
-- Since workspaces are fully isolated from each other, a workspace will always produce the same output regardless of whether it is installed by a scoped install or by a full install.
 - The package store can be re-used as is to implement support for import-maps, we simply need to not create the symlinks but generate the import-map file instead.
 
 ## Prior Art and Alternatives
