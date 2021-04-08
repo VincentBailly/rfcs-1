@@ -95,7 +95,7 @@ TODO: Describe implementation better.
    |          |                   |
    |          |                   +---> B (symlink to ../../B@1.0.0-0d9856)
    |          |
-   |          +---> ../../B@1.0.0-0d9856
+   |          +---> B@1.0.0-0d9856
    |
    +---> workspaces
              _
@@ -131,41 +131,84 @@ TODO: Describe implementation better.
 #### Dependency graph
 
 ```
-- root
-  - A@1.0.0
-    - B@1.0.0
-    - C@1.0.0
-      - B@* (peerDependency)
-      - D@1.0.0
-  - B@2.0.0
-  - C@1.0.0 (circular dependency)
+  root
+   _
+   |
+   +---> foo (workspace)
+   |      _
+   |      |
+   |      +---> A @ 1.0.0
+   |      |       _
+   |      |       |
+   |      |       +---> B @ * (peer dependency)
+   |      |
+   |      +---> B @ 1.0.0
+   |
+   +---> bar (workspace)
+          _
+          |
+          +---> A @ 1.0.0
+          |       _
+          |       |
+          |       +---> B @ * (peer dependency)
+          |
+          +---> B @ 2.0.0
+
+
 ```
 
 #### Installation on disk
 
 ```
-- root
-  - .store
-    - A@1.0.0-3511350ab
-      - node_modules
-        - B -> ../../B@1.0.0-326a99159dc
-        - C -> ../../C@1.0.0+B@1.0.0-552c48dcf8b26
-    - B@1.0.0-326a99159dc
-    - B@2.0.0-e720142097
-    - C@1.0.0+B@1.0.0-552c48dcf8b26
-      - node_modules
-        - B -> ../../B@1.0.0-326a99159dc
-        - D => ../../D@1.0.0-1993b2f64e
-    - C@1.0.0+B@2.0.0-9a6b39e1d
-      - node_modules
-        - B -> ../../B@2.0.0-e720142097
-        - D => ../../D@1.0.0-1993b2f64e
-    - D@1.0.0-1993b2f64e
-      - node_modules
-        - B -> ../../B@2.0.0-e720142097
-        - C -> ../../C@1.0.0+B@2.0.0-9a6b39e1d
-  - node_modules
-    - A -> ../../.store/A@1.0.0-3511350ab
+  root
+   _
+   |
+   +---> package_store
+   |          _
+   |          |
+   |          +---> A@1.0.0+B@1.0.0-21f95f7
+   |          |        _
+   |          |        |
+   |          |        +---> node_modules
+   |          |                   _
+   |          |                   |
+   |          |                   +---> B (symlink to ../../B@1.0.0-0d9856)
+   |          |
+   |          +---> A@1.0.0+B@2.0.0-66fe689
+   |          |        _
+   |          |        |
+   |          |        +---> node_modules
+   |          |                   _
+   |          |                   |
+   |          |                   +---> B (symlink to ../../B@2.0.0-a2ea56)
+   |          |
+   |          +---> B@1.0.0-0d9856
+   |          |
+   |          +---> B@2.0.0-a2ea56
+   |
+   +---> workspaces
+             _
+             |
+             +---> foo
+             |      _
+             |      |
+             |      +---> node_modules
+             |                 _
+             |                 |
+             |                 +---> A (symlink to ../../package_store/A@1.0.0+B@1.0.0-21f95f7)
+             |                 |
+             |                 +---> B (synlink to ../../package_store/B@1.0.0-0d9856)
+             |
+             +---> bar
+                    _
+                    |
+                    +---> node_modules
+                               _
+                               |
+                               +---> A (symlink to ../../package_store/A@1.0.0+B@2.0.0-66fe689)
+                               |
+                               +---> B (symlink to ../../package_store/B@2.0.0-a2ea56)
+             
 ```
 
 
