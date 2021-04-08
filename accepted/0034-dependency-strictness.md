@@ -45,28 +45,85 @@ TODO: Describe implementation better.
 - Packages are installed in folder called the store
 - Each package is installed in a folder name containing a hash of the content of this package (and possibly of its dependencies).
 - node_modules folders are created and populated by symlinks to the location of the dependency in the store.
+- peer dependencies are resolved based on the parents and treated as normal dependencies. If a conflict occurs and two different parent provide a different version of a peer dependency, this will result in two different store entries for the same package (one for each resolved peer dependency version).
 
 ### Simple example 
 
 #### Dependency graph
 
 ```
-- root
-  - A@1.0.0
-    - B@1.0.0
+  root
+   _
+   |
+   +---> foo (workspace)
+   |      _
+   |      |
+   |      +---> A @ 1.0.0
+   |              _
+   |              |
+   |              +---> B @ 1.0.0
+   |
+   +---> bar (workspace)
+   |      _
+   |      |
+   |      +---> A @ 1.0.0
+   |                _
+   |                |
+   |                +---> B @ 1.0.0
+   |
+   +---> fish (workspace)
+          _
+          |
+          +---> B @ 1.0.0
+
 ```
 
 #### Installation on disk
 
 ```
-- root
-  - .store
-    - A@1.0.0-21f95f7
-      - node_modules
-        - B -> ../../B@1.0.0-0d98569
-    - B@1.0.0-0d98569
-  - node_modules
-    - A -> ../.store/a@1.0.0-21f95f7
+  root
+   _
+   |
+   +---> package_store
+   |          _
+   |          |
+   |          +---> A@1.0.0-21f95f7
+   |          |        _
+   |          |        |
+   |          |        +---> node_modules
+   |          |                   _
+   |          |                   |
+   |          |                   +---> B (symlink to ../../B@1.0.0-0d9856)
+   |          |
+   |          +---> ../../B@1.0.0-0d9856
+   |
+   +---> workspaces
+             _
+             |
+             +---> foo
+             |      _
+             |      |
+             |      +---> node_modules
+             |                 _
+             |                 |
+             |                 +---> A (symlink to ../../package_store/A@1.0.0-21f95f7)
+             |
+             +---> bar
+             |      _
+             |      |
+             |      +---> node_modules
+             |                 _
+             |                 |
+             |                 +---> A (symlink to ../../package_store/A@1.0.0-21f95f7)
+             +---> fish
+                    _
+                    |
+                    +---> node_modules
+                               _
+                               |
+                               +---> B (symlink to ../../package_store/B@1.0.0-0d9856)
+
+
 ```
 
 ### More complex example: peer dependencies
@@ -80,8 +137,8 @@ TODO: Describe implementation better.
     - C@1.0.0
       - B@* (peerDependency)
       - D@1.0.0
-	- B@2.0.0
-	- C@1.0.0 (circular dependency)
+  - B@2.0.0
+  - C@1.0.0 (circular dependency)
 ```
 
 #### Installation on disk
@@ -112,15 +169,11 @@ TODO: Describe implementation better.
 ```
 
 
-## Nice side effects
+## Performance
 
-TODO: Polish this part.
+Compared to the current npm installation strategy, this proposal reduces package duplication, making the installation process faster. On a prototype, this installation strategy brought down the install time from 5 to 1min on a large monorepo of 500+ workspaces.
 
-Implementing strictness this way provide the following advantages:
-
-- It reduces package duplication compared to the npm default installation mode, making the installation process faster. On a prototype, this installation strategy brought down the install time from 5 to 1min on a large monorepo of 500+ workspaces.
-- Choosing wisely the hash used to store the packages in the store can lead to very fast incremental installation.
-- The package store can be re-used as is to implement support for import-maps, we simply need to not create the symlinks but generate the import-map file instead.
+The implementation can easily be applied to repos which don't use workspaces to get some perf benefit. Though it is unknown what this perf benefit would be in nono-workspace repo.
 
 ## Prior Art and Alternatives
 
