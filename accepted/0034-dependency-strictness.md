@@ -53,28 +53,28 @@ TODO: Describe implementation better.
 
 ```
   root
-   _
-   |
-   +---> foo (workspace)
-   |      _
-   |      |
-   |      +---> A @ 1.0.0
-   |              _
-   |              |
-   |              +---> B @ 1.0.0
-   |
-   +---> bar (workspace)
-   |      _
-   |      |
-   |      +---> A @ 1.0.0
-   |                _
-   |                |
-   |                +---> B @ 1.0.0
-   |
-   +---> fish (workspace)
-          _
-          |
-          +---> B @ 1.0.0
+   ┬
+   │
+   ├───> foo (workspace)
+   │      ┬
+   │      │
+   │      └───> A @ 1.0.0
+   │              ┬
+   │              │
+   │              └───> B @ 1.0.0
+   │
+   ├───> bar (workspace)
+   │      ┬
+   │      │
+   │      └───> A @ 1.0.0
+   │                ┬
+   │                │
+   │                └───> B @ 1.0.0
+   │
+   └───> fish (workspace)
+          ┬
+          │
+          └───> B @ 1.0.0
 
 ```
 
@@ -241,9 +241,6 @@ Strict package manager and project manager.
 ### [Import maps](https://github.com/WICG/import-maps)
 
 Standard supported by [a few browsers](https://caniuse.com/import-maps) and [deno](https://deno.land/) which makes it possible to implement strictness.
-
-Secure runtime for JavaScript and TypeScript.
-Strictness can be implemented using [import maps](https://github.com/WICG/import-maps)
 
 ## Unresolved Questions and Bikeshedding
 
