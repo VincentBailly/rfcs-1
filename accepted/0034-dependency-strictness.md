@@ -34,7 +34,7 @@ This approach offers these benefits:
 
 ## How does it work?
 
-This strategy is based on the following characteristic of the [nodejs module resolution algorithm](https://nodejs.org/api/modules.html#modules_all_together):
+This strategy is based on the following characteristic of the [Node.js module resolution algorithm](https://nodejs.org/api/modules.html#modules_all_together):
 
 When a package is being resolved, the resolution algorithm follows symlinks as if there were real folders. Once a module is resolved, the resolution algorithm calls 'realpath()' on the result. This means that the resolution algorithm always returns a real path. This allows to setup an arbitrary complex dependency graph while making sure nodejs does not create more than one instance of a given module..
 
