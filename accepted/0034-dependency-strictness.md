@@ -14,7 +14,7 @@ This assumption is a good approximation, but it is not always accurate. This ina
 
 What breaks this assumption is the fact that a dependency of one workspace can affect another workspace even if there is no dependency declared between these two workspaces. This is true because npm de-duplicates dependencies by installing them in the repo's root node_modules folder, making them accessible by every workspace.
 
-## Rational
+## Rationale
 
 There seems to be a consensus in the community that [import-maps](https://github.com/WICG/import-maps) is key to the future of dependency management. Because this standard is not yet implemented in NodeJS npm cannot use it yet as a strategy to implement strict-mode. Instead, the strategy suggested in this RFC is to implement a solution that works with the current ecosystem by making pieces that can be reused later-on to implement support for import-maps.
 
