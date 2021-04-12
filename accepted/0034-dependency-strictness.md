@@ -19,7 +19,7 @@ What breaks this assumption is the fact that a dependency of one workspace can a
 There seems to be a consensus in the community that [import-maps](https://github.com/WICG/import-maps) is key to the future of dependency management. Because this standard is not yet implemented in NodeJS npm cannot use it yet as a strategy to implement strict-mode. Instead, the strategy suggested in this RFC is to implement a solution that works with the current ecosystem by making pieces that can be reused later-on to implement support for import-maps.
 
 The goal is to have isolation between workspaces, so that one workspace's output cannot be impacted by the dependencies of an unrelated workspace. This means that we cannot install a dependency in the root of the repository as it would expose it to all the workspaces.
-This means that packages need to be accessed only through the node_modules folder of each workspace. A naive implementation of this would create duplication which would lead to performance and disk usage issues with a cost outweighing the benefit of strictness.
+This means that packages need to be accessed only through the node_modules folder of each workspace. A naive implementation of this would create dependency duplication which would lead to performance and disk usage issues with a cost outweighing the benefit of strictness.
 
 This RFC suggests to install packages on a flat structure on disk and enable the imports from one to another package by setting up symlinks between them.
 
