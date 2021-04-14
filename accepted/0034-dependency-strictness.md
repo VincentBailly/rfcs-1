@@ -172,7 +172,7 @@ TODO: Describe implementation better.
    │          │        └───> node_modules
    │          │                   ┬
    │          │                   │
-   │          │                   └───> B (symlink to ../../B@1.0.0-0d9856)
+   │          │                   └───> B (symlink to ../../B@1.0.0-0d98ab)
    │          │
    │          ├───> A@1.0.0+B@2.0.0-66fe689
    │          │        ┬
@@ -182,7 +182,7 @@ TODO: Describe implementation better.
    │          │                   │
    │          │                   └───> B (symlink to ../../B@2.0.0-a2ea56)
    │          │
-   │          ├───> B@1.0.0-0d9856
+   │          ├───> B@1.0.0-0d98ab
    │          │
    │          └───> B@2.0.0-a2ea56
    │
@@ -197,7 +197,7 @@ TODO: Describe implementation better.
              │                 │
              │                 ├───> A (symlink to ../../package_store/A@1.0.0+B@1.0.0-21f95f7)
              │                 │
-             │                 └───> B (synlink to ../../package_store/B@1.0.0-0d9856)
+             │                 └───> B (synlink to ../../package_store/B@1.0.0-0d98ab)
              │
              └───> bar
                     ┬
