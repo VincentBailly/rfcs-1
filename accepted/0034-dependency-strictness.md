@@ -23,7 +23,7 @@ The isolated-mode is an installation mode which will respect the workspace bound
 There seems to be a consensus in the community that [import-maps](https://github.com/WICG/import-maps) is key to the future of dependency management. Because this standard is not yet implemented in NodeJS npm cannot use it yet as a strategy to implement isolated-mode. Instead, the strategy suggested in this RFC is to implement a solution that works with the current ecosystem by making pieces that can be reused later-on to implement support for import-maps.
 
 The goal is to have isolation between workspaces, so that one workspace's output cannot be impacted by the dependencies of an unrelated workspace. This means that we cannot install a workspace dependency in the root of the repository as it would expose it to all the workspaces.
-This means that packages need to be accessed only through the node_modules folder of each workspace. A naive implementation of this would create duplication which would lead to performance and disk usage issues with a cost outweighing the benefit of strictness.
+This means that packages need to be accessed only through the node_modules folder of each workspace. A naive implementation of this would create dependency duplication which would lead to performance and disk usage issues with a cost outweighing the benefit of strictness.
 
 This RFC suggests to install packages on a flat structure on disk and enable the imports from one to another package by setting up symlinks between them.
 
@@ -41,7 +41,7 @@ This approach offers these benefits:
 
 This strategy is based on the following characteristic of the [Node.js module resolution algorithm](https://nodejs.org/api/modules.html#modules_all_together):
 
-When a module is being resolved, the resolution algorithm follows symlinks as if there were real folders. Once a module is resolved, the resolution algorithm calls 'realpath()' on the result. This means that the resolution algorithm always returns a real path. This allows to setup an arbitrary complex dependency graph while making sure Node.js does not create more than one instance of a given module.
+When a module is being resolved, the resolution algorithm follows symlinks as if they were real folders. Once a module is resolved, the resolution algorithm calls 'realpath()' on the result. This means that the resolution algorithm always returns a real path. This allows to setup an arbitrary complex dependency graph while making sure Node.js does not create more than one instance of a given module.
 
 ## Implementation
 
@@ -177,7 +177,7 @@ TODO: Describe implementation better.
    │          │        └───> node_modules
    │          │                   ┬
    │          │                   │
-   │          │                   └───> B (symlink to ../../B@1.0.0-0d9856)
+   │          │                   └───> B (symlink to ../../B@1.0.0-0d98ab)
    │          │
    │          ├───> A@1.0.0+B@2.0.0-66fe689
    │          │        ┬
@@ -187,7 +187,7 @@ TODO: Describe implementation better.
    │          │                   │
    │          │                   └───> B (symlink to ../../B@2.0.0-a2ea56)
    │          │
-   │          ├───> B@1.0.0-0d9856
+   │          ├───> B@1.0.0-0d98ab
    │          │
    │          └───> B@2.0.0-a2ea56
    │
@@ -202,7 +202,7 @@ TODO: Describe implementation better.
              │                 │
              │                 ├───> A (symlink to ../../package_store/A@1.0.0+B@1.0.0-21f95f7)
              │                 │
-             │                 └───> B (synlink to ../../package_store/B@1.0.0-0d9856)
+             │                 └───> B (synlink to ../../package_store/B@1.0.0-0d98ab)
              │
              └───> bar
                     ┬
