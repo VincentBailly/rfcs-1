@@ -4,7 +4,7 @@
 
 This RFC is a proposal to add a new opt-in installation mode called `isolated-mode`.
 
-Isolated-mode is an essential ingredient to fulfill the assumption that dependency-graph is an accurate description of the relationships between workspaces.
+Isolated-mode is an essential ingredient to fulfill the assumption that the dependency-graph is an accurate description of the relationships between workspaces.
 
 ## Motivation
 
@@ -47,9 +47,10 @@ When a module is being resolved, the resolution algorithm follows symlinks as if
 
 TODO: Describe implementation better.
 
-- Packages are installed in folder called the store
+- Packages are installed in folder called the store, this store is placed in the folder `node_modules/.npm`
 - Each package is installed in a folder name containing a hash of the content of this package (and possibly of its dependencies).
 - node_modules folders are created and populated by symlinks to the location of the dependency in the store.
+- Each package can import itself 
 - peer dependencies are resolved based on the parents and treated as normal dependencies. If a conflict occurs and two different parent provide a different version of a peer dependency, this will result in two different store entries for the same package (one for each resolved peer dependency version).
 
 ### Simple example
@@ -72,11 +73,11 @@ TODO: Describe implementation better.
    │      ┬
    │      │
    │      └───> A @ 1.0.0
-   │                ┬
-   │                │
-   │                └───> B @ 1.0.0
+   │              ┬
+   │              │
+   │              └───> B @ 1.0.0
    │
-   └───> fish (workspace)
+   └───> cat (workspace)
           ┬
           │
           └───> B @ 1.0.0
@@ -86,48 +87,26 @@ TODO: Describe implementation better.
 #### Installation on disk
 
 ```
-  root
+  root /
    ┬
    │
-   ├───> package_store
-   │          ┬
-   │          │
-   │          ├───> A@1.0.0-21f95f7
-   │          │        ┬
-   │          │        │
-   │          │        └───> node_modules
-   │          │                   ┬
-   │          │                   │
-   │          │                   └───> B (symlink to ../../B@1.0.0-0d9856)
-   │          │
-   │          └───> B@1.0.0-0d9856
+   ├─> node_modules / .npm / ─┬─> A@1.0.0-21f95f7 / node_modules / A / ─┬─> [content of package A]
+   │                          │                                         │
+   │                          │                                         └─> node_modules / B ( symlink to ../../../../B@1.0.0-0d98566/node_modules/B )
+   │                          │
+   │                          └─> B@1.0.0-0d98566 / node_modules / B / ───> [content of package B]
    │
-   └───> workspaces
-             ┬
-             │
-             ├───> foo
-             │      ┬
-             │      │
-             │      └───> node_modules
-             │                 ┬
-             │                 │
-             │                 └───> A (symlink to ../../package_store/A@1.0.0-21f95f7)
-             │
-             ├───> bar
-             │      ┬
-             │      │
-             │      └───> node_modules
-             │                 ┬
-             │                 │
-             │                 └───> A (symlink to ../../package_store/A@1.0.0-21f95f7)
-             └───> fish
-                    ┬
-                    │
-                    └───> node_modules
-                               ┬
-                               │
-                               └───> B (symlink to ../../package_store/B@1.0.0-0d9856)
-
+   └─> workspaces / ─┬─> foo / ─┬─> [content of workspace foo]
+                     │          │
+                     │          └─> node_modules / A ( symlink to ../../../node_modules/.npm/A@1.0.0-21f95f7/node_modules/A )
+                     │
+                     ├─> bar / ─┬─> [content of workspace bar]
+                     │          │
+                     │          └─> node_modules / A ( symlink to ../../../node_modules/.npm/A@1.0.0-21f95f7/node_modules/A )
+                     │
+                     └─> cat / ─┬─> [content of workspace cat]
+                                │
+                                └─> node_modules / B ( symlink to ../../../node_modules/.npm/B@1.0.0-0d98566/node_modules/B )
 
 ```
 
@@ -165,54 +144,32 @@ TODO: Describe implementation better.
 #### Installation on disk
 
 ```
-  root
+  root /
    ┬
    │
-   ├───> package_store
-   │          ┬
-   │          │
-   │          ├───> A@1.0.0+B@1.0.0-21f95f7
-   │          │        ┬
-   │          │        │
-   │          │        └───> node_modules
-   │          │                   ┬
-   │          │                   │
-   │          │                   └───> B (symlink to ../../B@1.0.0-0d98ab)
-   │          │
-   │          ├───> A@1.0.0+B@2.0.0-66fe689
-   │          │        ┬
-   │          │        │
-   │          │        └───> node_modules
-   │          │                   ┬
-   │          │                   │
-   │          │                   └───> B (symlink to ../../B@2.0.0-a2ea56)
-   │          │
-   │          ├───> B@1.0.0-0d98ab
-   │          │
-   │          └───> B@2.0.0-a2ea56
+   ├─> node_modules / .npm / ─┬─> A@1.0.0+B@1.0.0-21f95f7 / node_modules / A / ─┬─> [ content of package A ]
+   │                          │                                                 │
+   │                          │                                                 └─> node_modules / B ( symlink to ../../../../B@1.0.0-0d98ab/node_modules/B )
+   │                          │
+   │                          ├─> A@1.0.0+B@2.0.0-66fe689 / node_modules / A / ─┬─> [ content of package A ]
+   │                          │                                                 │
+   │                          │                                                 └─> node_modules / B ( symlink to ../../../../B@2.0.0-a2ea56/node_modules/B )
+   │                          │
+   │                          ├─> B@1.0.0-0d98ab / node_modules / B / ───> [ content of package B (v1) ]
+   │                          │
+   │                          └─> B@2.0.0-a2ea56 / node_modules / B / ───> [ content of package B (v2) ]
    │
-   └───> workspaces
-             ┬
-             │
-             ├───> foo
-             │      ┬
-             │      │
-             │      └───> node_modules
-             │                 ┬
-             │                 │
-             │                 ├───> A (symlink to ../../package_store/A@1.0.0+B@1.0.0-21f95f7)
-             │                 │
-             │                 └───> B (synlink to ../../package_store/B@1.0.0-0d98ab)
-             │
-             └───> bar
-                    ┬
-                    │
-                    └───> node_modules
-                               ┬
-                               │
-                               ├───> A (symlink to ../../package_store/A@1.0.0+B@2.0.0-66fe689)
-                               │
-                               └───> B (symlink to ../../package_store/B@2.0.0-a2ea56)
+   └─> workspaces / ─┬─> foo / ─┬─> [ content of workspace foo ]
+                     │          │
+                     │          └───> node_modules / ─┬─> A ( symlink to ../../../node_modules/.npm/A@1.0.0+B@1.0.0-21f95f7/node_modules/A )
+                     │                                │
+                     │                                └─> B ( synlink to ../../../node_modules/.npm/B@1.0.0-0d98ab/node_modules/B )
+                     │
+                     └─> bar / ─┬─> [ content of workspace bar ]
+                                │
+                                └───> node_modules / ─┬─> A ( symlink to ../../../node_modules/.npm/A@1.0.0+B@2.0.0-66fe689/node_modules/A )
+                                                      │
+                                                      └─> B ( synlink to ../../../node_modules/.npm/B@2.0.0-a2ia56/node_modules/B )
 
 ```
 
@@ -250,14 +207,23 @@ Standard supported by [a few browsers](https://caniuse.com/import-maps) and [den
 
 - npm supports circular dependencies, should strict mode support them? If so, would circular symlink be an issue?
 
+  - answer: yes we should support them, circular symlink should not be an issue.
+
 - Should we use symlinks or junctions on Windows? Both of them have drawbacks:
 
   - Junctions have to be representated by an absolute path, this means that junctions cannot be committed to git or packed into a package.
   - Symlinks can only be created in elevated shell [or when Windows is in "devloper mode"](https://blogs.windows.com/windowsdeveloper/2016/12/02/symlinks-windows-10/#LCiVBWTgQF5s7fmL.97).
 
+  - answer: junctions by default and symlinks as opt-in
+  
 - Should the store folder be in the repo itself?
   - if yes, every package in the store will have access to the dependencies of the git repo, because they will have access to its node_module folder (`../../node_modules`)
   - if no, where? Should it be shared with other repositories installed on the system?
-- How much community code will break when the system stops allowing phantom dependencies? In other words, how much code needs to be fixed to work properly in strict mode?
+  
+  - answer: in the first implementation the store will be in the repo, the dependencies of the repo itself will be concidered global because accessible by every packages. In a later stage, we can implement a store which is outside the repo and shared accross repos.
+  
+- How much community code will break when the system forbids access to undeclared dependencies? In other words, how much code needs to be fixed to work properly in strict mode?
 
 - Should/can the content of the package store be read-only? This would enable faster incremental installation.
+
+  - answer, not for the first implementation
