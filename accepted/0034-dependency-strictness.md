@@ -2,33 +2,38 @@
 
 ## Summary
 
-This RFC is a proposal to add a new opt-in installation mode called `strict-mode`.
+This RFC is a proposal to add a new opt-in installation mode called `isolated-mode`.
 
-Strict mode is an essential ingredient to fulfill the assumption that dependency-graph is an accurate description of the relationships between workspaces.
+Isolated-mode is an essential ingredient to fulfill the assumption that dependency-graph is an accurate description of the relationships between workspaces.
 
 ## Motivation
 
-Monorepo-build-tools optimize the dev-workflows by assuming that the dependency graph is an accurate representation of the relationships between workspaces.
+The introduction of workspaces in npm v7 brought the ability to split large codebases into smaller pieces of code with declared dependencies between them.
 
-This assumption is a good approximation, but it is not always accurate. This inaccuracy can lead to a broken builds or releasing broken code.
+Several build tools took advantage of these declared dependencies to split the builds into multiple steps (one per workspace) which could be cached or run in parallel. This caching and parallelism usually improves significantly build performance.
 
-What breaks this assumption is the fact that a dependency of one workspace can affect another workspace even if there is no dependency declared between these two workspaces. This is true because npm de-duplicates dependencies by installing them in the repo's root node_modules folder, making them accessible by every workspace.
+The issue is that the current default installation strategy does not fully respect the dependency graph between workspaces, making the dependency graph innacurate. It is innacurate because it does not reflect the fact that any workspace can make a change that can impact any other workspace.
+
+This innacuracy leads the build systems wrongly skipping build operations, leading to risk of bugs slipping through.
+
+The isolated-mode is an installation mode which will respect the workspace boundaries and relationships.
 
 ## Rationale
 
-There seems to be a consensus in the community that [import-maps](https://github.com/WICG/import-maps) is key to the future of dependency management. Because this standard is not yet implemented in NodeJS npm cannot use it yet as a strategy to implement strict-mode. Instead, the strategy suggested in this RFC is to implement a solution that works with the current ecosystem by making pieces that can be reused later-on to implement support for import-maps.
+There seems to be a consensus in the community that [import-maps](https://github.com/WICG/import-maps) is key to the future of dependency management. Because this standard is not yet implemented in NodeJS npm cannot use it yet as a strategy to implement isolated-mode. Instead, the strategy suggested in this RFC is to implement a solution that works with the current ecosystem by making pieces that can be reused later-on to implement support for import-maps.
 
-The goal is to have isolation between workspaces, so that one workspace's output cannot be impacted by the dependencies of an unrelated workspace. This means that we cannot install a dependency in the root of the repository as it would expose it to all the workspaces.
+The goal is to have isolation between workspaces, so that one workspace's output cannot be impacted by the dependencies of an unrelated workspace. This means that we cannot install a workspace dependency in the root of the repository as it would expose it to all the workspaces.
 This means that packages need to be accessed only through the node_modules folder of each workspace. A naive implementation of this would create duplication which would lead to performance and disk usage issues with a cost outweighing the benefit of strictness.
 
 This RFC suggests to install packages on a flat structure on disk and enable the imports from one to another package by setting up symlinks between them.
 
 This approach offers these benefits:
 
-- *No package duplication*, a given version of a package is installed only once on disk, no matter how many workspaces depend on it.
-- *Strict dependencies*, only the dependencies declared in package.json are installed as symlinks. Phantom dependencies are exposed by failing builds and tests.
-- *Work with standard runtimes*, while other alternatives rely on modifying the runtimes (eg. NodeJS), this solution is compatible with the assumptions of most build tools.
-- *Battle tested*, this installation strategy has been battle tested by large private repos in Microsoft which have successfully used it through [pnpm](https://pnpm.io/).
+- _No package duplication_, a given version of a package is installed only once on disk, no matter how many workspaces depend on it.
+- _Isolated dependencies_, only the dependencies declared in package.json are installed as symlinks. A workspace is isolated from other workspaces' dependencies.
+- _Work with standard runtimes_, while other alternatives rely on modifying NodeJS and other runtimes, this solution is compatible with the assumptions of most build tools.
+- _Battle tested_, this installation strategy has been battle tested by large private repos in Microsoft which have successfully used it through [pnpm](https://pnpm.io/).
+- [_Recommended by Nodejs_](https://nodejs.org/api/modules.html#modules_addenda_package_manager_tips)
 
 ## Detailed Explanation
 
@@ -47,7 +52,7 @@ TODO: Describe implementation better.
 - node_modules folders are created and populated by symlinks to the location of the dependency in the store.
 - peer dependencies are resolved based on the parents and treated as normal dependencies. If a conflict occurs and two different parent provide a different version of a peer dependency, this will result in two different store entries for the same package (one for each resolved peer dependency version).
 
-### Simple example 
+### Simple example
 
 #### Dependency graph
 
@@ -208,9 +213,8 @@ TODO: Describe implementation better.
                                ├───> A (symlink to ../../package_store/A@1.0.0+B@2.0.0-66fe689)
                                │
                                └───> B (symlink to ../../package_store/B@2.0.0-a2ea56)
-             
-```
 
+```
 
 ## Performance
 
@@ -247,13 +251,13 @@ Standard supported by [a few browsers](https://caniuse.com/import-maps) and [den
 - npm supports circular dependencies, should strict mode support them? If so, would circular symlink be an issue?
 
 - Should we use symlinks or junctions on Windows? Both of them have drawbacks:
-    - Junctions have to be representated by an absolute path, this means that junctions cannot be committed to git or packed into a package.
-    - Symlinks can only be created in elevated shell [or when Windows is in "devloper mode"](https://blogs.windows.com/windowsdeveloper/2016/12/02/symlinks-windows-10/#LCiVBWTgQF5s7fmL.97).
+
+  - Junctions have to be representated by an absolute path, this means that junctions cannot be committed to git or packed into a package.
+  - Symlinks can only be created in elevated shell [or when Windows is in "devloper mode"](https://blogs.windows.com/windowsdeveloper/2016/12/02/symlinks-windows-10/#LCiVBWTgQF5s7fmL.97).
 
 - Should the store folder be in the repo itself?
-    - if yes, every package in the store will have access to the dependencies of the git repo, because they will have access to its node_module folder (`../../node_modules`)
-    - if no, where? Should it be shared with other repositories installed on the system?
-	
+  - if yes, every package in the store will have access to the dependencies of the git repo, because they will have access to its node_module folder (`../../node_modules`)
+  - if no, where? Should it be shared with other repositories installed on the system?
 - How much community code will break when the system stops allowing phantom dependencies? In other words, how much code needs to be fixed to work properly in strict mode?
 
 - Should/can the content of the package store be read-only? This would enable faster incremental installation.
