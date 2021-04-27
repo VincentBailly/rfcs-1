@@ -2,9 +2,9 @@
 
 ## Summary
 
-This RFC is a proposal to add a new opt-in installation mode called `isolated-mode`.
+This RFC is a proposal to add a new opt-in installation mode.
 
-Isolated-mode is an essential ingredient to fulfill the assumption that the dependency-graph is an accurate description of the relationships between workspaces.
+This mode would be the missing ingredient to make workspaces truly scalable.
 
 ## Motivation
 
@@ -12,38 +12,74 @@ The introduction of workspaces in npm v7 brought the ability to split large code
 
 Several build tools took advantage of these declared dependencies to split the builds into multiple steps (one per workspace) which could be cached or run in parallel. This caching and parallelism usually improves significantly build performance.
 
-The issue is that the current default installation strategy does not fully respect the dependency graph between workspaces, making the dependency graph innacurate. It is innacurate because it does not reflect the fact that any workspace can make a change that can impact any other workspace.
+The current default installation strategy does not properly communicates to NodeJS the information about the dependency graph.
+NodeJS having an innacurate view of the dependency graph leads the build systems to wrongly skip build operations, leading to risk of bugs slipping through.
 
-This innacuracy leads the build systems wrongly skipping build operations, leading to risk of bugs slipping through.
+The installation mode proposed by this RFC would communicate accurately to NodeJS the dependency graph, allowing build tools to correctly reason about it.
 
-The isolated-mode is an installation mode which will respect the workspace boundaries and relationships.
+## Naming
+
+The proposed name for this mode is `pure-mode`, meaning "pure" as in "no side effects". This name comes from the parallel with functional programming; in functional programming, functions don't have side effects, in `pure-mode` workspaces have no side effects.
+
+To make the discussions more efficient, we could also name the current default installation mode of npm. We will call this mode `hoisted-mode` as packages are shared accross workspaces by hoisting them to the root of the project.
+
+## More on the problem
+
+Packages and workspaces declare their dependencies to npm by using special fields in their package.json. The NodeJS runtime is unaware of these special fields, instead it uses a [module resolution algorithm](https://nodejs.org/api/modules.html) to determine the meaning of a module importing another module. npm bridges this gap by converting the declared dependency graph into a folder structure which makes sense to NodeJS. This operation is call `reification`.
+
+When converting the dependency graph to a folder structure, the `hoisted-mode` is losing information. Multiple different dependency graphs can be converted to the same folder structure. Since the folder structure is all that NodeJS uses to resolve modules, NodeJS misses some information about dependencies. This loss of information is most frequently visible through the fact that workspaces are able to successfully import the dependencies declared by other workspaces. 
+
+### Forgetting to declare dependencies
+
+When workspaces can successfully use code of a package without having a dependency on it, people keep forgetting to declare their dependencies. This lead to situations where updating the dependencies of one workspace breaks a simingly unrelated workspace. 
+
+It is worth noting that static code analysis tools can help significantly reduce the frequency of these mistakes.
+
+### Duplication
+
+The `hoisted-mode` is not always successful at sharing common dependencies. Conflicts in versions lead to packages being installed multiple times on disk. These conflicts become more frequent when the project scales. The frequency of these conflicts can be reduced by an effort to align dependencies' versions across the project.
+
+These duplications come with the following cost:
+
+- Performance degradation of the installation phase
+- Inneficient disk usage
+- Performance, memory cost at runtime as NodeJS sees duplicated modules as two different modules.
+
+### Tools crawling the node_modules folders
+
+Certain tools implement their own module resolution algorithm instead of the one provided by NodeJS. One of the motivation for a tool to implement its own resolution algorithm is that it can add more feature to it.
+
+Crawling the node_modules folder is such a feature used by certain build tools. This feature means that the mere presence of a package in a `node_modules` folder will have an impact on the output of a workspace. This means that any modification of a project's `node_modules` folder is possibly a breaking change to every workspaces in this project, regardless of the dependency graph.
+
+For example, the TypeScript compiler by default includes to its compilation *every* package in the folder `node_modules/@types` without any explicit import statement needed.
 
 ## Rationale
 
-There seems to be a consensus in the community that [import-maps](https://github.com/WICG/import-maps) is key to the future of dependency management. Because this standard is not yet implemented in NodeJS npm cannot use it yet as a strategy to implement isolated-mode. Instead, the strategy suggested in this RFC is to implement a solution that works with the current ecosystem by making pieces that can be reused later-on to implement support for import-maps.
+There seems to be a consensus in the community that [import-maps](https://github.com/WICG/import-maps) will become the best way to communicate the dependency graph to NodeJS. Because this standard is not yet implemented in NodeJS, npm needs to provide an alternative way to solve the problems stated earlier.
 
-The goal is to have isolation between workspaces, so that one workspace's output cannot be impacted by the dependencies of an unrelated workspace. This means that we cannot install a workspace dependency in the root of the repository as it would expose it to all the workspaces.
-This means that packages need to be accessed only through the node_modules folder of each workspace. A naive implementation of this would create dependency duplication which would lead to performance and disk usage issues with a cost outweighing the benefit of strictness.
+The goal is to provide an accurate dependency graph to NodeJS while still relying on NodeJS current module resolution algorithm.
 
-This RFC suggests to install packages on a flat structure on disk and enable the imports from one to another package by setting up symlinks between them.
+We deem valuable to invest the time implementing the `pure-mode` now knowning that import-maps are coming because most of the implementation will be re-usable to implement a `import-maps-mode`.
 
-This approach offers these benefits:
+There are already two compeeting solutions out there which implement a `pure-mode` (pnpm and yarn). We decided to choose the pnpm approach for the following reasons:
 
-- _No package duplication_, a given version of a package is installed only once on disk, no matter how many workspaces depend on it.
-- _Isolated dependencies_, only the dependencies declared in package.json are installed as symlinks. A workspace is isolated from other workspaces' dependencies.
-- _Work with standard runtimes_, while other alternatives rely on modifying NodeJS and other runtimes, this solution is compatible with the assumptions of most build tools.
-- _Battle tested_, this installation strategy has been battle tested by large private repos in Microsoft which have successfully used it through [pnpm](https://pnpm.io/).
-- [_Recommended by Nodejs_](https://nodejs.org/api/modules.html#modules_addenda_package_manager_tips)
+- *Works with current echosystem*, the pnpm `pure-mode` does not require any modification to NodeJS or to the various build tools.
+- *Battle tested*, Microsoft has successfully used pnpm to manage large monorepo for year.
+- *Recommended by NodeJS*, this approach is actually the recommended approach by [the NodeJS documentation](https://nodejs.org/api/modules.html#modules_addenda_package_manager_tips).
 
-## Detailed Explanation
+# Implementation
+
+## Simple Explanation
+
+The packages are laid out on disk with a flat structure in a folder called the "package store". The dependencies between packages will be expressed by creating symlinks between the various packages.
 
 ## How does it work?
 
-This strategy is based on the following characteristic of the [Node.js module resolution algorithm](https://nodejs.org/api/modules.html#modules_all_together):
+This strategy is based on the fact that [Node.js module resolution algorithm](https://nodejs.org/api/modules.html#modules_all_together) follows symlinks and works with them exactly the same as if they were real folders.
 
-When a module is being resolved, the resolution algorithm follows symlinks as if they were real folders. Once a module is resolved, the resolution algorithm calls 'realpath()' on the result. This means that the resolution algorithm always returns a real path. This allows to setup an arbitrary complex dependency graph while making sure Node.js does not create more than one instance of a given module.
+Additionally, once a module is resolved, the resolution algorithm calls 'realpath()' on the result. This means that the resolution algorithm always returns a real path. This allows to setup an arbitrary complex dependency graph while making sure Node.js does not create more than one instance of a given module.
 
-## Implementation
+## Detailed Explanation
 
 TODO: Describe implementation better.
 
