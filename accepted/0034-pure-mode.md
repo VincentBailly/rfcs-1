@@ -1,4 +1,4 @@
-# Dependency strictness
+# Pure mode
 
 ## Summary
 
