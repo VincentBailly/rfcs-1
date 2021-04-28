@@ -27,11 +27,11 @@ To make the discussions more efficient, we could also name the current default i
 
 Packages and workspaces declare their dependencies to npm by using special fields in their package.json. The NodeJS runtime is unaware of these special fields, instead it uses a [module resolution algorithm](https://nodejs.org/api/modules.html) to determine the meaning of a module importing another module. npm bridges this gap by converting the declared dependency graph into a folder structure which makes sense to NodeJS. This operation is call `reification`.
 
-When converting the dependency graph to a folder structure, the `hoisted-mode` is losing information. Multiple different dependency graphs can be converted to the same folder structure. Since the folder structure is all that NodeJS uses to resolve modules, NodeJS misses some information about dependencies. This loss of information is most frequently visible through the fact that workspaces are able to successfully import the dependencies declared by other workspaces. 
+When converting the dependency graph to a folder structure, the `hoisted-mode` is losing information. Multiple different dependency graphs can be converted to the same folder structure. Since the folder structure is all that NodeJS uses to resolve modules, NodeJS misses some information about dependencies. This loss of information is most frequently visible through the fact that workspaces are able to successfully import the dependencies declared by other workspaces.
 
 ### Forgetting to declare dependencies
 
-When workspaces can successfully use code of a package without having a dependency on it, people keep forgetting to declare their dependencies. This lead to situations where updating the dependencies of one workspace breaks a simingly unrelated workspace. 
+When workspaces can successfully use code of a package without having a dependency on it, people keep forgetting to declare their dependencies. This lead to situations where updating the dependencies of one workspace breaks a simingly unrelated workspace.
 
 It is worth noting that static code analysis tools can help significantly reduce the frequency of these mistakes.
 
@@ -51,11 +51,11 @@ Certain tools implement their own module resolution algorithm instead of the one
 
 Crawling the node_modules folder is such a feature used by certain build tools. This feature means that the mere presence of a package in a `node_modules` folder will have an impact on the output of a workspace. This means that any modification of a project's `node_modules` folder is possibly a breaking change to every workspaces in this project, regardless of the dependency graph.
 
-For example, the TypeScript compiler by default includes to its compilation *every* package in the folder `node_modules/@types` without any explicit import statement needed.
+For example, the TypeScript compiler by default includes to its compilation _every_ package in the folder `node_modules/@types` without any explicit import statement needed.
 
 ## Rationale
 
-There seems to be a consensus in the community that [import-maps](https://github.com/WICG/import-maps) will become the best way to communicate the dependency graph to NodeJS. Because this standard is not yet implemented in NodeJS, npm needs to provide an alternative way to solve the problems stated earlier.
+The [import-maps](https://github.com/WICG/import-maps) standard is a very good tool to communicate the dependency graph to NodeJS. But because this standard is not yet implemented in NodeJS, npm needs an alternative way to solve the problems stated earlier.
 
 The goal is to provide an accurate dependency graph to NodeJS while still relying on NodeJS current module resolution algorithm.
 
@@ -63,9 +63,9 @@ We deem valuable to invest the time implementing the `pure-mode` now knowning th
 
 There are already two compeeting solutions out there which implement a `pure-mode` (pnpm and yarn). We decided to choose the pnpm approach for the following reasons:
 
-- *Works with current echosystem*, the pnpm `pure-mode` does not require any modification to NodeJS or to the various build tools.
-- *Battle tested*, Microsoft has successfully used pnpm to manage large monorepo for year.
-- *Recommended by NodeJS*, this approach is actually the recommended approach by [the NodeJS documentation](https://nodejs.org/api/modules.html#modules_addenda_package_manager_tips).
+- _Works with current echosystem_, the pnpm `pure-mode` does not require any modification to NodeJS or to the various build tools.
+- _Battle tested_, Microsoft has successfully used pnpm to manage large monorepo for year.
+- _Recommended by NodeJS_, this approach is actually the recommended approach by [the NodeJS documentation](https://nodejs.org/api/modules.html#modules_addenda_package_manager_tips).
 
 # Implementation
 
@@ -81,13 +81,88 @@ Additionally, once a module is resolved, the resolution algorithm calls 'realpat
 
 ## Detailed Explanation
 
-TODO: Describe implementation better.
+### Structure
 
-- Packages are installed in folder called the store, this store is placed in the folder `node_modules/.npm`
-- Each package is installed in a folder name containing a hash of the content of this package (and possibly of its dependencies).
-- node_modules folders are created and populated by symlinks to the location of the dependency in the store.
-- Each package can import itself 
-- peer dependencies are resolved based on the parents and treated as normal dependencies. If a conflict occurs and two different parent provide a different version of a peer dependency, this will result in two different store entries for the same package (one for each resolved peer dependency version).
+In the workspaces:
+
+- Each workspace has its own `node_modules` folder.
+- Each `node_modules` folder contains symlinks.
+- The symlinks in a `node_modules` folder correspond to the matching workspace's dependencies.
+- Each symlink is given the same name as the dependency it represents.
+- Each symlink points to a location in the package store where the corresponding package is installed.
+
+In the package store:
+
+- The package store is a folder stored in the root level `node_modules` folder.
+- The package store is named `.npm`.
+- The package store contains folders, one for each dependencies installed. These dependencies can be direct workspace dependencies or transient dependencies.
+- These folders have a name containing the name of the package, its version and a hash of its content and its dependencies.
+- These folders contain a `node_modules` folder.
+- These `node_modules` folders contain a folder being named after the name of the package.
+- These folders contain the actual content of the package (the `package.json` and the JavaScript code).
+- The dependencies of each packages are installed exactly the same way as workspaces' dependencies are installed.
+
+This structure may seem more complicated than necessary. The reason for this complication is to make it possible for a package to import itself using its own name. For example, the following code `require.resolve("foo");` in `node_modules/.npm/foo@1.0.0-1234/node_modules/foo/bar.js` will correctly return `node_modules/.npm/foo@1.0.0-1234/node_modules/foo/index.js`.
+
+#### Peer dependencies
+
+Peer dependencies are resolved by npm and treated as normal dependencies.
+
+For instance, the following dependency graph,
+
+```
+ foo@1.0.0  ────┬─────> bar@2.0.0 ──( peer dependency )──> baz@^1.0.0
+                │
+                └─────> baz@1.3.0
+
+```
+
+will be converted to the following:
+
+```
+ foo@1.0.0  ────┬─────> bar@2.0.0 ────> baz@1.3.0
+                │
+                └─────> baz@1.3.0
+
+```
+
+### Edge cases
+
+#### Peer dependency conflict
+
+When a peerDependency can be resolved by more than one version, virtual packages will be created, as many as they are versions resolving the peer dependency. These virtual packages will be the same, with the difference that their dependencies will be different and as a consequence their hash-based name will be different.
+
+For instance, the followind dependency graph,
+
+```
+ cat@1.0.0  ────┬─────> baz@1.5.0
+                │
+                └─────>
+                        bar@2.0.0 ──( peer dependency )──> baz@^1.0.0
+                ┌─────>
+                │
+ foo@1.0.0  ────┴─────> baz@1.3.0
+
+```
+
+will be consverted to the following:
+
+```
+ cat@1.0.0  ────┬─────> baz@1.5.0
+                │
+                └─────> bar@2.0.0 ────> baz@^1.5.0
+
+                ┌─────> bar@2.0.0 ────> baz@^1.3.0
+                │
+ foo@1.0.0  ────┴─────> baz@1.3.0
+
+```
+
+#### Circular dependencies
+
+Circular symlinks are allowed by the OS and _most_ tools work well with them. So this is not a major concern.
+
+Since the hash of a package contain its dependencies, circular dependencies make the calculation of this hash more complicated. Here is [an article](https://www.fugue.co/blog/2016-05-18-cryptographic-hashes-and-dependency-cycles.html) explaining how to hash a graph with cycles.
 
 ### Simple example
 
@@ -251,13 +326,14 @@ Standard supported by [a few browsers](https://caniuse.com/import-maps) and [den
   - Symlinks can only be created in elevated shell [or when Windows is in "devloper mode"](https://blogs.windows.com/windowsdeveloper/2016/12/02/symlinks-windows-10/#LCiVBWTgQF5s7fmL.97).
 
   - answer: junctions by default and symlinks as opt-in
-  
+
 - Should the store folder be in the repo itself?
+
   - if yes, every package in the store will have access to the dependencies of the git repo, because they will have access to its node_module folder (`../../node_modules`)
   - if no, where? Should it be shared with other repositories installed on the system?
-  
+
   - answer: in the first implementation the store will be in the repo, the dependencies of the repo itself will be concidered global because accessible by every packages. In a later stage, we can implement a store which is outside the repo and shared accross repos.
-  
+
 - How much community code will break when the system forbids access to undeclared dependencies? In other words, how much code needs to be fixed to work properly in strict mode?
 
 - Should/can the content of the package store be read-only? This would enable faster incremental installation.
