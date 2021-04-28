@@ -290,6 +290,20 @@ Compared to the current npm installation strategy, this proposal reduces package
 
 The implementation can easily be applied to repos which don't use workspaces to get some perf benefit. Though it is unknown what this perf benefit would be in nono-workspace repo.
 
+## Configuration
+
+The `pure-mode` is a project level setting, it does not make much sense to install some dependencies in `pure-mode` and others in `hoisted-mode`. For this reason, to configure a project in `pure-mode`, a setting has to be added to the `.npmrc` of the project and the lockfile has to be re-generated. A tool may be made available to convert `hoisted-mode` lockfiles to `pure-mode` lockfiles.
+
+## Compatibility
+
+As workspaces are supported only from npm version 7, there is no concern about making `pure-mode` compatible with versions olders than 7.0.0. 
+
+The tree structure will be serialized to the lockfile in a way that any version of npm 7.0.0 can understand. This means that any version of npm 7 will be able to install a project configured in `pure-mode`.
+
+Modifying a dependency in a `pure-mode` project with a version of npm not supporting `pure-mode` is likely going to leave the repo in a broken state and should be avoided.
+
+When using `pure-mode` it will be recommended to properly configure the `engines` field of the `package.json` to make sure developers who want to modify the dependencies don't shoot themselves in the foot and put the repo in an instable state. 
+
 ## Prior Art and Alternatives
 
 ### [pnpm](https://github.com/pnpm/pnpm)
@@ -316,10 +330,6 @@ Standard supported by [a few browsers](https://caniuse.com/import-maps) and [den
 
 ## Unresolved Questions and Bikeshedding
 
-- npm supports circular dependencies, should strict mode support them? If so, would circular symlink be an issue?
-
-  - answer: yes we should support them, circular symlink should not be an issue.
-
 - Should we use symlinks or junctions on Windows? Both of them have drawbacks:
 
   - Junctions have to be representated by an absolute path, this means that junctions cannot be committed to git or packed into a package.
@@ -327,15 +337,4 @@ Standard supported by [a few browsers](https://caniuse.com/import-maps) and [den
 
   - answer: junctions by default and symlinks as opt-in
 
-- Should the store folder be in the repo itself?
-
-  - if yes, every package in the store will have access to the dependencies of the git repo, because they will have access to its node_module folder (`../../node_modules`)
-  - if no, where? Should it be shared with other repositories installed on the system?
-
-  - answer: in the first implementation the store will be in the repo, the dependencies of the repo itself will be concidered global because accessible by every packages. In a later stage, we can implement a store which is outside the repo and shared accross repos.
-
 - How much community code will break when the system forbids access to undeclared dependencies? In other words, how much code needs to be fixed to work properly in strict mode?
-
-- Should/can the content of the package store be read-only? This would enable faster incremental installation.
-
-  - answer, not for the first implementation
