@@ -43,7 +43,7 @@ These duplications come with the following cost:
 
 - Performance degradation of the installation phase
 - Inneficient disk usage
-- Performance, memory cost at runtime as NodeJS sees duplicated modules as two different modules.
+- Performance, memory cost at runtime as Node.js sees duplicated modules as two different modules.
 
 ### Tools crawling the node_modules folders
 
