@@ -31,7 +31,7 @@ When converting the dependency graph to a folder structure, `hoisted-mode` loses
 
 ### Forgetting to declare dependencies
 
-When workspaces can successfully use code of a package without having a dependency on it, people keep forgetting to declare their dependencies. This lead to situations where updating the dependencies of one workspace breaks a simingly unrelated workspace.
+When workspaces can successfully use code of a package without having a dependency on it, people forget to declare their dependencies. This lead to situations where updating the dependencies of one workspace breaks a seemingly unrelated workspace.
 
 It is worth noting that static code analysis tools can help significantly reduce the frequency of these mistakes.
 
