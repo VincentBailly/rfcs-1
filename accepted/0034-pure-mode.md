@@ -49,7 +49,7 @@ These duplications come with the following cost:
 
 Certain tools implement their own module resolution algorithm instead of the one provided by Node.js. One of the motivation for a tool to implement its own resolution algorithm is that it can add more feature to it.
 
-Crawling the node_modules folder is such a feature used by certain build tools. This feature means that the mere presence of a package in a `node_modules` folder will have an impact on the output of a workspace. This means that any modification of a project's `node_modules` folder is possibly a breaking change to every workspaces in this project, regardless of the dependency graph.
+Crawling the `node_modules` folder is such a feature used by certain build tools. This feature means that the mere presence of a package in a `node_modules` folder will have an impact on the output of a workspace. This means that any modification of a project's `node_modules` folder is possibly a breaking change to every workspaces in this project, regardless of the dependency graph.
 
 For example, the TypeScript compiler by default includes to its compilation _every_ package in the folder `node_modules/@types` without any explicit import statement needed.
 
