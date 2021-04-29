@@ -25,7 +25,7 @@ To make the discussions more efficient, we could also name the current default i
 
 ## More on the problem
 
-Packages and workspaces declare their dependencies to npm by using special fields in their package.json. The NodeJS runtime is unaware of these special fields, instead it uses a [module resolution algorithm](https://nodejs.org/api/modules.html) to determine the meaning of a module importing another module. npm bridges this gap by converting the declared dependency graph into a folder structure which makes sense to NodeJS. This operation is call `reification`.
+Packages and workspaces declare their dependencies to npm by using special fields in their `package.json`. The Node.js runtime is unaware of these special fields, instead it uses a [module resolution algorithm](https://nodejs.org/api/modules.html) to determine the meaning of a module importing another module. npm bridges this gap by converting the declared dependency graph into a folder structure which makes sense to Node.js. This operation is call `reification`.
 
 When converting the dependency graph to a folder structure, the `hoisted-mode` is losing information. Multiple different dependency graphs can be converted to the same folder structure. Since the folder structure is all that NodeJS uses to resolve modules, NodeJS misses some information about dependencies. This loss of information is most frequently visible through the fact that workspaces are able to successfully import the dependencies declared by other workspaces.
 
