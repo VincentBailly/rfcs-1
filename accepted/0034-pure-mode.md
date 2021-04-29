@@ -12,8 +12,8 @@ The introduction of workspaces in npm v7 brought the ability to split large code
 
 Several build tools took advantage of these declared dependencies to split the builds into multiple steps (one per workspace) which could be cached or run in parallel. This caching and parallelism usually improves significantly build performance.
 
-The current default installation strategy does not properly communicates to NodeJS the information about the dependency graph.
-NodeJS having an innacurate view of the dependency graph leads the build systems to wrongly skip build operations, leading to risk of bugs slipping through.
+The current default installation strategy does not properly communicates to Node.js the information about the dependency graph. Node.js having an inaccurate view of the dependency graph leads the build systems to wrongly skip build operations, leading to risk of bugs slipping through.
+
 
 The installation mode proposed by this RFC would communicate accurately to NodeJS the dependency graph, allowing build tools to correctly reason about it.
 
