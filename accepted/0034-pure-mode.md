@@ -43,11 +43,11 @@ These duplications come with the following cost:
 
 - Performance degradation of the installation phase
 - Inneficient disk usage
-- Performance, memory cost at runtime as Node.js sees duplicated modules as two different modules.
+- Performance and memory cost at runtime as Node.js sees duplicated modules as two different modules.
 
 ### Tools crawling the node_modules folders
 
-Certain tools implement their own module resolution algorithm instead of the one provided by Node.js. One of the motivation for a tool to implement its own resolution algorithm is that it can add more feature to it.
+Certain tools implement their own module resolution algorithm instead of the one provided by Node.js. One of the motivation for a tool to implement its own resolution algorithm is that it can add more features to it.
 
 Crawling the `node_modules` folder is such a feature used by certain build tools. This feature means that the mere presence of a package in a `node_modules` folder will have an impact on the output of a workspace. This means that any modification of a project's `node_modules` folder is possibly a breaking change to every workspaces in this project, regardless of the dependency graph.
 
@@ -55,17 +55,17 @@ For example, the TypeScript compiler by default includes to its compilation _eve
 
 ## Rationale
 
-The [import-maps](https://github.com/WICG/import-maps) standard is a very good tool to communicate the dependency graph to NodeJS. But because this standard is not yet implemented in NodeJS, npm needs an alternative way to solve the problems stated earlier.
+The [import-maps](https://github.com/WICG/import-maps) standard is a very good tool to communicate the dependency graph to NodeJS. But because this standard is not yet implemented in Node.js, npm needs an alternative way to solve the problems stated earlier.
 
-The goal is to provide an accurate dependency graph to NodeJS while still relying on NodeJS current module resolution algorithm.
+The goal is to provide an accurate dependency graph to Node.js while still relying on Node.js current module resolution algorithm.
 
 We deem valuable to invest the time implementing the `pure-mode` now knowning that import-maps are coming because most of the implementation will be re-usable to implement a `import-maps-mode`.
 
-There are already two compeeting solutions out there which implement a `pure-mode` (pnpm and yarn). We decided to choose the pnpm approach for the following reasons:
+There are already two compeeting solutions out there which implement a `pure-mode` ([pnpm](https://pnpm.io) and [yarn](https://yarnpkg.com)). We decided to choose the pnpm approach for the following reasons:
 
-- _Works with current echosystem_, the pnpm `pure-mode` does not require any modification to NodeJS or to the various build tools.
-- _Battle tested_, Microsoft has successfully used pnpm to manage large monorepo for year.
-- _Recommended by NodeJS_, this approach is actually the recommended approach by [the NodeJS documentation](https://nodejs.org/api/modules.html#modules_addenda_package_manager_tips).
+- _Works with current ecosystem_, the pnpm `pure-mode` does not require any modification to Node.js or to the various build tools.
+- _Battle tested_, Microsoft has successfully used pnpm to manage large monorepo for years.
+- _Recommended by Node.js_, this approach is actually the recommended approach by [the NodeJS documentation](https://nodejs.org/api/modules.html#modules_addenda_package_manager_tips).
 
 # Implementation
 
@@ -95,7 +95,7 @@ In the package store:
 
 - The package store is a folder stored in the root level `node_modules` folder.
 - The package store is named `.npm`.
-- The package store contains folders, one for each dependencies installed. These dependencies can be direct workspace dependencies or transient dependencies.
+- The package store contains folders, one for each dependencies installed. These dependencies can be direct workspace dependencies or transitive dependencies.
 - These folders have a name containing the name of the package, its version and a hash of its content and its dependencies.
 - These folders contain a `node_modules` folder.
 - These `node_modules` folders contain a folder being named after the name of the package.
@@ -288,7 +288,7 @@ Since the hash of a package contain its dependencies, circular dependencies make
 
 Compared to the current npm installation strategy, this proposal reduces package duplication, making the installation process faster. On a prototype, this installation strategy brought down the install time from 6 to 2 minutes on a large monorepo of 500+ workspaces.
 
-The implementation can easily be applied to repos which don't use workspaces to get some perf benefit. Though it is unknown what this perf benefit would be in nono-workspace repo.
+The implementation can easily be applied to projects which don't use workspaces to get some perf benefit. Though it is unknown what this perf benefit would be in nono-workspace project.
 
 ## Configuration
 
@@ -300,20 +300,20 @@ As workspaces are supported only from npm version 7, there is no concern about m
 
 The tree structure will be serialized to the lockfile in a way that any version of npm 7.0.0 can understand. This means that any version of npm 7 will be able to install a project configured in `pure-mode`.
 
-Modifying a dependency in a `pure-mode` project with a version of npm not supporting `pure-mode` is likely going to leave the repo in a broken state and should be avoided.
+Modifying a dependency in a `pure-mode` project with a version of npm not supporting `pure-mode` is likely going to leave the project in a broken state and should be avoided.
 
-When using `pure-mode` it will be recommended to properly configure the `engines` field of the `package.json` to make sure developers who want to modify the dependencies don't shoot themselves in the foot and put the repo in an instable state. 
+When using `pure-mode` it will be recommended to properly configure the `engines` field of the `package.json` to make sure developers who want to modify the dependencies don't shoot themselves in the foot and put the project in an instable state. 
 
 ## Prior Art and Alternatives
 
 ### [pnpm](https://github.com/pnpm/pnpm)
 
-Strict package manager.
+Package manager with a `pure-mode`.
 This RFC is mostly inspired by pnpm.
 
 ### [ied](https://github.com/alexanderGugel/ied)
 
-Strict package manager.
+Package manager with a `pure-mode`.
 Similar to pnpm but unmaintained.
 
 ### [nix](https://nixos.wiki/wiki/Nix)
@@ -322,11 +322,11 @@ Functional package manager. Can work with npm packages (eg. [node2nix](https://g
 
 ### [yarn](https://yarnpkg.com/)
 
-Strict package manager and project manager.
+Package manager with a `pure-mode` and project manager.
 
 ### [Import maps](https://github.com/WICG/import-maps)
 
-Standard supported by [a few browsers](https://caniuse.com/import-maps) and [deno](https://deno.land/) which makes it possible to implement strictness.
+Standard supported by [a few browsers](https://caniuse.com/import-maps) and [deno](https://deno.land/) which makes it possible to implement `pure-mode`.
 
 ## Unresolved Questions and Bikeshedding
 
