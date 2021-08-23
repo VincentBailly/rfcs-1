@@ -21,7 +21,7 @@ The installation mode proposed by this RFC would communicate accurately to Node.
 
 The proposed name for this mode is `pure-mode`, meaning "pure" as in "no side effects". This name comes from the parallel with functional programming; in functional programming, functions don't have side effects, in `pure-mode` workspaces have no side effects.
 
-To make the discussions more efficient, we could also name the current default installation mode of npm. We will call this mode `hoisted-mode` as packages are shared accross workspaces by hoisting them to the root of the project.
+To make the discussions more efficient, we could also name the current default installation mode of npm. We will call this mode `hoisted-mode` as packages are shared across workspaces by hoisting them to the root of the project.
 
 ## More on the problem
 
@@ -59,9 +59,9 @@ The [import-maps](https://github.com/WICG/import-maps) standard is a very good t
 
 The goal is to provide an accurate dependency graph to Node.js while still relying on Node.js current module resolution algorithm.
 
-We deem valuable to invest the time implementing the `pure-mode` now knowning that import-maps are coming because most of the implementation will be re-usable to implement a `import-maps-mode`.
+We deem valuable to invest the time implementing the `pure-mode` now knowing that import-maps are coming because most of the implementation will be re-usable to implement a `import-maps-mode`.
 
-There are already two compeeting solutions out there which implement a `pure-mode` ([pnpm](https://pnpm.io) and [yarn](https://yarnpkg.com)). We decided to choose the pnpm approach for the following reasons:
+There are already two competing solutions out there which implement a `pure-mode` ([pnpm](https://pnpm.io) and [yarn](https://yarnpkg.com)). We decided to choose the pnpm approach for the following reasons:
 
 - _Works with current ecosystem_, the pnpm `pure-mode` does not require any modification to Node.js or to the various build tools.
 - _Battle tested_, Microsoft has successfully used pnpm to manage large monorepo for years.
@@ -86,7 +86,7 @@ Additionally, once a module is resolved, the resolution algorithm calls 'realpat
 In the workspaces:
 
 - Each workspace has its own `node_modules` folder.
-- Each `node_modules` folder contains symlinks.
+- Each `node_modules` folder contain symlinks.
 - The symlinks in a `node_modules` folder correspond to the matching workspace's dependencies.
 - Each symlink is given the same name as the dependency it represents.
 - Each symlink points to a location in the package store where the corresponding package is installed.
@@ -132,7 +132,7 @@ will be converted to the following:
 
 When a peerDependency can be resolved by more than one version, virtual packages will be created, as many as they are versions resolving the peer dependency. These virtual packages will be the same, with the difference that their dependencies will be different and as a consequence their hash-based name will be different.
 
-For instance, the followind dependency graph,
+For instance, the following dependency graph,
 
 ```
  cat@1.0.0  ────┬─────> baz@1.5.0
@@ -145,7 +145,7 @@ For instance, the followind dependency graph,
 
 ```
 
-will be consverted to the following:
+will be converted to the following:
 
 ```
  cat@1.0.0  ────┬─────> baz@1.5.0
@@ -252,7 +252,7 @@ Since the hash of a package contain its dependencies, circular dependencies make
 
 ```
 
-#### Installation on disk
+#### Installation on diskof
 
 ```
   root /
@@ -288,7 +288,7 @@ Since the hash of a package contain its dependencies, circular dependencies make
 
 Compared to the current npm installation strategy, this proposal reduces package duplication, making the installation process faster. On a prototype, this installation strategy brought down the install time from 6 to 2 minutes on a large monorepo of 500+ workspaces.
 
-The implementation can easily be applied to projects which don't use workspaces to get some perf benefit. Though it is unknown what this perf benefit would be in nono-workspace project.
+The implementation can easily be applied to projects which don't use workspaces to get some perf benefit. Though it is unknown what this perf benefit would be in non-workspace project.
 
 ## Configuration
 
@@ -333,7 +333,7 @@ Standard supported by [a few browsers](https://caniuse.com/import-maps) and [den
 - Should we use symlinks or junctions on Windows? Both of them have drawbacks:
 
   - Junctions have to be representated by an absolute path, this means that junctions cannot be committed to git or packed into a package.
-  - Symlinks can only be created in elevated shell [or when Windows is in "devloper mode"](https://blogs.windows.com/windowsdeveloper/2016/12/02/symlinks-windows-10/#LCiVBWTgQF5s7fmL.97).
+  - Symlinks can only be created in elevated shell [or when Windows is in "developer mode"](https://blogs.windows.com/windowsdeveloper/2016/12/02/symlinks-windows-10/#LCiVBWTgQF5s7fmL.97).
 
   - answer: junctions by default and symlinks as opt-in
 
