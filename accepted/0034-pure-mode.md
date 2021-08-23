@@ -288,13 +288,13 @@ Since the hash of a package contain its dependencies, circular dependencies make
 
 Compared to the current npm installation strategy, this proposal reduces package duplication, making the installation process faster. On a prototype, this installation strategy brought down the install time from 6 to 2 minutes on a large monorepo of 500+ workspaces.
 
-The implementation can easily be applied to projects which don't use workspaces to get some perf benefit. Though it is unknown what this perf benefit would be in non-workspace project.
-
 ## Configuration
 
 The `pure-mode` is a project level setting, it does not make much sense to install some dependencies in `pure-mode` and others in `hoisted-mode`. For this reason, to configure a project in `pure-mode`, a setting has to be added to the `.npmrc` of the project and the lockfile has to be re-generated. A tool may be made available to convert `hoisted-mode` lockfiles to `pure-mode` lockfiles.
 
 ## Compatibility
+
+### Different versions of npm
 
 As workspaces are supported only from npm version 7, there is no concern about making `pure-mode` compatible with versions olders than 7.0.0. 
 
@@ -302,7 +302,11 @@ The tree structure will be serialized to the lockfile in a way that any version 
 
 Modifying a dependency in a `pure-mode` project with a version of npm not supporting `pure-mode` is likely going to leave the project in a broken state and should be avoided.
 
-When using `pure-mode` it will be recommended to properly configure the `engines` field of the `package.json` to make sure developers who want to modify the dependencies don't shoot themselves in the foot and put the project in an instable state. 
+When using `pure-mode` it will be recommended to properly configure the `engines` field of the `package.json` to make sure developers who want to modify the dependencies don't shoot themselves in the foot and put the project in an instable state.
+
+### Projects not using workspaces
+
+The `pure-mode` will also be available for projects not using the workspace feature. This is useful as a library author, using `pure-mode` gives me the guarantee that my library will work as intended when consumed by projects which use `pure-mode`.
 
 ## Prior Art and Alternatives
 
